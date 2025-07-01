@@ -1,0 +1,30 @@
+# Byte-compiled files
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual environments
+.venv/
+env/
+venv/
+
+# VSCode
+.vscode/
+
+# PyTorch cache (if applicable)
+*.pt
+*.pth
+
+# Logs, checkpoints, etc.
+*.log
+*.tar
+*.tar.gz
+*.ckpt
+
+# Poetry artifacts
+.cache/
+
+# OS metadata
+.DS_Store
+Thumbs.db
