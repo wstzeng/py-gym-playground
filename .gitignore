@@ -17,6 +17,9 @@ venv/
 *.pth
 
 # Logs, checkpoints, etc.
+log/
+checkpoints/
+backup/
 *.log
 *.tar
 *.tar.gz
