@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+import torch
 
 class BaseAgent(ABC):
     def __init__(self):
@@ -26,3 +27,13 @@ class BaseAgent(ABC):
     @abstractmethod
     def update_policy(self):
         pass
+
+    def save_policy(self, fname: str):
+        if not hasattr(self, 'policy'):
+            raise AttributeError('Agent has no policy attribute to save.')
+        torch.save(self.policy.state_dict(), fname)
+
+    def load_policy(self, fname: str):
+        if not hasattr(self, 'policy'):
+            raise AttributeError('Agent has no policy attribute to load.')
+        self.policy.load_state_dict(torch.load(fname))

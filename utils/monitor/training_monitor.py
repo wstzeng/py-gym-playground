@@ -3,7 +3,6 @@ from collections import deque
 import logging
 from typing import Union, List
 import os
-
 from .plot_config import set_plot_style
 
 class TrainingMonitor:
@@ -47,7 +46,7 @@ class TrainingMonitor:
         self.log_file_path = None
         if 'file' in self.modes:
             os.makedirs(self.log_dir, exist_ok=True)
-            self.log_file_path = os.path.join(self.log_dir, f'{env_name}_training.log')
+            self.log_file_path = os.path.join(self.log_dir, f'{env_name}_training.csv')
             self._log_file = open(self.log_file_path, 'w')
             header = "Iteration,AverageReward,Loss\n"
             self._log_file.write(header)
