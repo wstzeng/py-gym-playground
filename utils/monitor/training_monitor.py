@@ -20,6 +20,7 @@ class TrainingMonitor:
     def __init__(
         self,
         env_name: str,
+        agent_name: str,
         total_iterations: int,
         window_size: int = 100,
         mode: Union[str, List[str]] = 'cli',
@@ -57,7 +58,9 @@ class TrainingMonitor:
             styles = set_plot_style()
             plt.ion()
             self.fig, self.ax1 = plt.subplots(1, 1)
-            self.fig.suptitle(f'RL Training on {env_name}', **styles['suptitle'])
+            self.fig.suptitle(
+                f'{agent_name} Training on {env_name}', **styles['suptitle']
+            )
 
             self.ax2 = self.ax1.twinx()
 
