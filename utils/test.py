@@ -1,5 +1,5 @@
 import gymnasium as gym
-from agent import BaseAgent
+from agents import BaseAgent
 
 def test_loop(
     env_name: str,

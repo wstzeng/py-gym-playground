@@ -1,5 +1,5 @@
 import gymnasium as gym
-from agent import BaseAgent
+from agents import BaseAgent
 from .monitor.training_monitor import TrainingMonitor as Monitor
 
 def train_loop(
@@ -10,7 +10,10 @@ def train_loop(
     monitor_mode = 'cli',
 ):
     env = gym.make(env_name)
-    monitor = Monitor(env_name, T, mode=monitor_mode, window_size=50)
+    monitor = Monitor(
+        env_name, agent.__class__.__name__, T,
+        mode=monitor_mode, window_size=50
+    )
 
     for t in range(1, T + 1):
         total_rewards = []

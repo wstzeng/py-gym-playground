@@ -1,7 +1,7 @@
 import gymnasium as gym
 
 from policy.discrete_policy import DiscretePolicyNetwork as Policy
-from agent import ReinforceAgent as Agent
+from agents import ReinforceAgent as Agent
 from utils.train import train_loop
 from utils.test import test_loop
 
@@ -21,6 +21,8 @@ def main(env_name='CartPole-v1', T=200, N=10):
 
     # Render a test episode
     test_loop(env_name, agent)
+    
+    agent.save_policy(f'checkpoints/{env_name}.ckpt')
 
 if __name__ == '__main__':
     main()

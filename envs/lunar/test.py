@@ -1,6 +1,6 @@
 import gymnasium as gym
 from policy.discrete_policy import DiscretePolicyNetwork as Policy
-from agent import ReinforceAgent as Agent
+from agents import ReinforceAgent as Agent
 from utils.test import test_loop
 
 def main(env_name='LunarLander-v3'):
