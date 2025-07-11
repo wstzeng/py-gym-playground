@@ -4,7 +4,7 @@ def set_plot_style():
     """
     Set unified matplotlib style for consistent and professional plots.
     """
-    plt.style.use('xkcd')
+    plt.style.use('seaborn-v0_8-darkgrid')
 
     plt.rcParams.update({
         'figure.figsize': (8, 6),
