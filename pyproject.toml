@@ -21,6 +21,6 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 packages = [
-    { include = "agent" },
+    { include = "agents" },
     { include = "policy" },
 ]
