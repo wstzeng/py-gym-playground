@@ -4,7 +4,7 @@ def set_plot_style():
     """
     Set unified matplotlib style for consistent and professional plots.
     """
-    plt.style.use('seaborn-v0_8-darkgrid')
+    plt.style.use('xkcd')
 
     plt.rcParams.update({
         'figure.figsize': (8, 6),
@@ -17,7 +17,7 @@ def set_plot_style():
         'axes.titleweight': 'bold',
         'axes.labelsize': 14,
         'axes.labelweight': 'bold',
-        'axes.grid': True,
+        'axes.grid': False,
         'grid.alpha': 0.3,
         'grid.linestyle': '--',
         'grid.linewidth': 0.5,
