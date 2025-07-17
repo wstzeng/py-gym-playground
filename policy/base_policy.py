@@ -15,21 +15,25 @@ class BasePolicyNetwork(nn.Module, ABC):
         """Return a torch.distributions.Distribution object"""
         ...
 
-    def select_action(self, state):
+    def select_action(self, state, action=None):
         if not isinstance(state, torch.Tensor):
             state = torch.tensor(state, dtype=torch.float32)
         else:
             state = state.float()
-        state = state.unsqueeze(0)
+        if state.ndim == 1:
+            state = state.unsqueeze(0)
         state = state.to(next(self.parameters()).device)
         dist = self.distribution(state)
-        action = dist.sample()
+
+        if action is None:
+            action = dist.sample()
+        
         log_prob = dist.log_prob(action)
 
         if isinstance(action, torch.Tensor):
             action = action.squeeze(0)
 
         if isinstance(log_prob, torch.Tensor) and log_prob.ndim > 0:
-            log_prob = log_prob.sum()  # for multivariate Normal, etc.
+            log_prob = log_prob.sum(axis=-1)  # for multivariate Normal, etc.
 
         return action.detach().cpu().numpy() if not isinstance(action, (int, float)) else action.item(), log_prob
