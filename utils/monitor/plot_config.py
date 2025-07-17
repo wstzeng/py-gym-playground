@@ -35,6 +35,8 @@ def set_plot_style():
         # Legend
         'legend.fontsize': 12,
         'legend.frameon': False,
+
+        'axes.unicode_minus': False,
     })
     
     # Subplots title sytle
