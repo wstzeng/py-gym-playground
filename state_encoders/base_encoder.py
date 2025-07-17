@@ -1,0 +1,32 @@
+# agents/state_encoders/base_encoder.py
+from abc import ABC, abstractmethod
+import torch
+
+class BaseEncoder(ABC):
+    """
+    Abstract base class for all state encoders.
+    Defines the common interface for encoding environment observations.
+    """
+    def __init__(self, observation_space):
+        self.observation_space = observation_space
+
+    @abstractmethod
+    def encode(self, observation) -> torch.Tensor:
+        """
+        Encodes a raw observation from the environment into a tensor
+        suitable for neural network processing.
+
+        Args:
+            observation: The raw observation from the gymnasium environment.
+
+        Returns:
+            torch.Tensor: The encoded state as a PyTorch tensor.
+        """
+        pass
+
+    @abstractmethod
+    def get_output_dim(self) -> int:
+        """
+        Returns the dimension of the encoded output.
+        """
+        pass
