@@ -8,8 +8,8 @@ class BaseEncoder(ABC):
     Abstract base class for all state encoders.
     Defines the common interface for encoding environment observations.
     """
-    def __init__(self, observation_space):
-        self.observation_space = observation_space
+    def __init__(self, state_dim):
+        self.state_dim = state_dim
 
     @abstractmethod
     def encode(self, observation) -> torch.Tensor:

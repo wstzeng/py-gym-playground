@@ -6,29 +6,28 @@ import torch.nn as nn
 import numpy as np
 
 class GridEncoder(BaseEncoder, ABC):
-    def __init__(self, observation_space, architecture: "BaseGridArchitecture"):
-        super().__init__()
+    def __init__(self, state_dim, architecture: "BaseGridArchitecture"):
+        super().__init__(state_dim)
         
         self.architecture = architecture
 
-        obs_shape = observation_space.shape
-        if len(obs_shape) == 3: # (H, W, C) or (C, H, W)
-            if obs_shape[0] < obs_shape[2] and obs_shape[0] < obs_shape[1]:
+        if len(state_dim) == 3: # (H, W, C) or (C, H, W)
+            if state_dim[0] < state_dim[2] and state_dim[0] < state_dim[1]:
                 # (C, H, W)
-                self.in_channels = obs_shape[0]
-                self.height = obs_shape[1]
-                self.width = obs_shape[2]
+                self.in_channels = state_dim[0]
+                self.height = state_dim[1]
+                self.width = state_dim[2]
                 self._needs_permute_to_nchw = False
             else:
                 # (H, W, C)
-                self.height = obs_shape[0]
-                self.width = obs_shape[1]
-                self.in_channels = obs_shape[2]
+                self.height = state_dim[0]
+                self.width = state_dim[1]
+                self.in_channels = state_dim[2]
                 self._needs_permute_to_nchw = True
         else: # (H, W) gray scale
             self.in_channels = 1
-            self.height = obs_shape[0]
-            self.width = obs_shape[1]
+            self.height = state_dim[0]
+            self.width = state_dim[1]
             self._needs_permute_to_nchw = False
         
         self._output_dim = self.architecture.get_output_dim(
@@ -95,7 +94,7 @@ class BaseGridArchitecture(nn.Module, ABC):
         """
         pass
 
-class CNNGridEncoder(BaseGridArchitecture):
+class SimpleCNNArchitecture(BaseGridArchitecture):
     def __init__(self, in_channels: int, height: int, width: int):
         super().__init__()
 
