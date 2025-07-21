@@ -1,6 +1,7 @@
 # agents/state_encoders/base_encoder.py
 from abc import ABC, abstractmethod
 import torch
+import torch.nn as nn
 
 class BaseEncoder(ABC):
     """
