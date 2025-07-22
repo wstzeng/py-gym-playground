@@ -24,3 +24,12 @@ packages = [
     { include = "agents" },
     { include = "policy" },
 ]
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.1"
+black = "^24.3"
+ruff = "^0.4"
+
+[tool.poetry.scripts]
+train = "utils.train:main"
+test = "utils.test:main"
