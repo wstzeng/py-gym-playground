@@ -4,8 +4,8 @@ from . import BaseAgent
 from .buffer.reinforce_buffer import ReinforceBuffer
 
 class ReinforceAgent(BaseAgent):
-    def __init__(self, policy, lr=1e-3, gamma=0.99, device='cpu'):
-        super().__init__()
+    def __init__(self, encoder, policy, lr=1e-3, gamma=0.99, device='cpu'):
+        super().__init__(encoder)
         self.policy = policy.to(device)
         self.optimizer = optim.Adam(self.policy.parameters(), lr=lr)
         self.gamma = gamma
@@ -22,7 +22,7 @@ class ReinforceAgent(BaseAgent):
         self.buffer.end_episode()
 
     def select_action(self, state):
-        state = torch.as_tensor(state, dtype=torch.float32, device=self.device)
+        state = super().select_action(state)
         action, log_prob = self.policy.select_action(state)
         self._latest_log_prob = log_prob
         return action

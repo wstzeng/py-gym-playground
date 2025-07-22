@@ -2,7 +2,8 @@ from abc import ABC, abstractmethod
 import torch
 
 class BaseAgent(ABC):
-    def __init__(self):
+    def __init__(self, encoder):
+        self.encoder = encoder
         return
 
     def start_episode(self):
@@ -20,9 +21,8 @@ class BaseAgent(ABC):
     def clear_buffer(self):
         self.buffer.clear()
 
-    @abstractmethod
     def select_action(self, state):
-        pass
+        state = self.encoder(state)
 
     @abstractmethod
     def update_policy(self):
