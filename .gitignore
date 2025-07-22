@@ -31,3 +31,6 @@ backup/
 # OS metadata
 .DS_Store
 Thumbs.db
+
+# This is for `tree --gitignore` output
+*/__pycache__/
