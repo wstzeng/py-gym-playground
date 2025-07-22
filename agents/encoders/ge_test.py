@@ -1,5 +1,5 @@
 import gymnasium as gym
-from state_encoders.grid_encoder import SimpleCNNArchitecture, GridEncoder
+from .grid_encoder import SimpleCNNArchitecture, GridEncoder
 
 def main(env_name='CarRacing-v3', T=200, N=10):
     env = gym.make(env_name, continuous=False)
