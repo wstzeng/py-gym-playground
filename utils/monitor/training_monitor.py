@@ -45,7 +45,7 @@ class TrainingMonitor:
                 BarColumn(bar_width=20), 
                 "[progress.percentage]{task.percentage:>3.0f}%",
                 "•",
-                TextColumn("[bold green]Avg R: {task.fields[avg_r]:>8.2f}"),
+                TextColumn("[bold green]Reward: {task.fields[avg_r]:>8.2f}"),
                 "•",
                 TextColumn("[bold magenta]Loss: {task.fields[loss]:>10.4f}"),
                 "•",
