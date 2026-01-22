@@ -29,10 +29,10 @@ def main(env_name='LunarLander-v3', T=200, N=10):
     
     policy = ActorCriticPolicy(actor_net=actor_head, critic_net=critic_head)
 
-    optimizer = optim.Adam([
-        {'params': encoder.parameters()},
-        {'params': policy.parameters()}
-    ], lr=1e-3)
+    optimizer = optim.Adam(
+        list(encoder.parameters()) + list(policy.parameters()),
+        lr=1e-3
+    )
 
     buffer = ActorCriticBuffer()
 
@@ -50,7 +50,7 @@ def main(env_name='LunarLander-v3', T=200, N=10):
     # Render a test episode
     test_loop(env_name, agent)
 
-    agent.save_policy(f'checkpoints/{env_name}.ckpt')
+    agent.save_checkpoints(f'checkpoints/{env_name}.ckpt')
 
 if __name__ == '__main__':
     main(T=500)

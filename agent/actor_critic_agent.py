@@ -1,4 +1,3 @@
-# agents/actor_critic_agent.py
 import torch
 from .base_agent import BaseAgent
 
@@ -52,16 +51,13 @@ class ActorCriticAgent(BaseAgent):
         log_probs = torch.stack(log_probs)
         values = torch.stack(values).squeeze()  # From [T, 1] to [T]
         
-        dist = torch.distributions.Categorical(logits=log_probs)
-        entropy = dist.entropy().mean()
-
-        advantages = returns - values.detach()
+        advantages = (returns - values.detach())
         advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
         
         actor_loss = -(log_probs * advantages).mean()
-        critic_loss = torch.nn.functional.mse_loss(values, returns)
+        critic_loss = torch.nn.functional.smooth_l1_loss(values, returns)
         
-        loss = actor_loss + 0.5 * critic_loss - 0.01 * entropy
+        loss = actor_loss + 0.1 * critic_loss
 
         self.optimizer.zero_grad()
         loss.backward()

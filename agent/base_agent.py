@@ -57,7 +57,7 @@ class BaseAgent(ABC):
         torch.save(checkpoint, path)
         print(f"[*] Checkpoint saved to {path}")
 
-def load_checkpoints(self, path: str):
+    def load_checkpoints(self, path: str):
         """
         Generic load method that restores state for all present components.
         """
