@@ -2,9 +2,9 @@ import gymnasium as gym
 from torch import nn
 import torch.optim as optim
 from agent.encoder import VectorEncoder, CompositeEncoder
-from agent.policy import DiscretePolicy
-from agent.buffer import ReinforceBuffer
-from agent import ReinforceAgent
+from agent.policy import ActorCriticPolicy
+from agent.buffer import ActorCriticBuffer
+from agent import ActorCriticAgent
 from utils.train import train_loop
 from utils.test import test_loop
 
@@ -24,23 +24,26 @@ def main(env_name='LunarLander-v3', T=200, N=10):
     )
     encoder = VectorEncoder(network=v_net, input_dim=state_dim)
 
-    p_net = nn.Linear(encoder.feature_dim, n_actions)
-    policy = DiscretePolicy(network=p_net)
+    actor_head = nn.Linear(encoder.feature_dim, n_actions)
+    critic_head = nn.Linear(encoder.feature_dim, 1)
+    
+    policy = ActorCriticPolicy(actor_net=actor_head, critic_net=critic_head)
 
-    optimizer = optim.Adam(
-        list(v_net.parameters()) + list(p_net.parameters()), 
-        lr=1e-3
-    )
+    optimizer = optim.Adam([
+        {'params': encoder.parameters()},
+        {'params': policy.parameters()}
+    ], lr=1e-3)
 
-    buffer = ReinforceBuffer()
+    buffer = ActorCriticBuffer()
 
-    agent = ReinforceAgent(
+    agent = ActorCriticAgent(
         encoder=encoder,
         policy=policy,
         buffer=buffer,
         optimizer=optimizer, 
         device="cpu"
     )
+
     # Run training
     train_loop(env_name, agent, T, N, monitor_mode=['cli', 'live', 'file'])
 
