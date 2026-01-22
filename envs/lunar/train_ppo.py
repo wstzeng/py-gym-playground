@@ -56,7 +56,6 @@ def main(env_name='LunarLander-v3', T=200, N=10):
         device="cpu",
         eps_clip=0.2,
         k_epochs=10,
-        critic_weight=0.1,
         entropy_weight=0.01
     )
 
@@ -69,5 +68,5 @@ def main(env_name='LunarLander-v3', T=200, N=10):
     agent.save_checkpoints(f'checkpoints/{env_name}_ppo.ckpt')
 
 if __name__ == '__main__':
-    # Starting with T=1000 to compare with previous AC results
-    main(T=1000)
+    # Starting with T=500 to compare with previous AC results
+    main(T=500)
