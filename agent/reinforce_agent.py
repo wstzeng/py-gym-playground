@@ -12,7 +12,7 @@ class ReinforceAgent(BaseAgent):
         self.optimizer = optimizer
 
     def select_action(self, state):
-        state_tensor = torch.from_numpy(state).float().to(self.device)
+        state_tensor = torch.FloatTensor(state).to(self.device)
         
         features = self.encoder(state_tensor)
         dist = self.policy.get_distribution(features)
