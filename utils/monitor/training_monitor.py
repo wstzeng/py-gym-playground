@@ -32,6 +32,10 @@ class TrainingMonitor:
         self.loss_history = deque(maxlen=window_size)
         self.env_name = env_name
 
+        self.full_reward_history = []
+        self.full_loss_history = []
+        self.agent_name = agent_name
+
         # --- Rich CLI Setup ---
         self.console = Console()
         self.progress = None
@@ -74,6 +78,15 @@ class TrainingMonitor:
             self.fig, self.ax1 = plt.subplots(figsize=(10, 6))
             self.fig.subplots_adjust(top=0.88)
             self.ax2 = self.ax1.twinx()
+
+            self.ax1.set_xlabel('Iteration', fontweight='bold')
+            self.ax1.set_ylabel('Reward', fontweight='bold', color='tab:blue')
+            self.ax2.set_ylabel('Loss', fontweight='bold', color='tab:orange')
+
+            self.ax1.tick_params(
+                axis='y', color='tab:blue', labelcolor='tab:blue')
+            self.ax2.tick_params(
+                axis='y', color='tab:orange', labelcolor='tab:orange')
             
             # Layering: Reward (ax1) on top of Loss (ax2)
             self.ax1.set_zorder(self.ax2.get_zorder() + 1)
@@ -98,6 +111,10 @@ class TrainingMonitor:
         self.episode_counts.append(iteration)
         self.avg_rewards_history.append(avg_reward)
         self.loss_history.append(loss)
+        
+        # Keep full history for final plotting
+        self.full_reward_history.append(avg_reward)
+        self.full_loss_history.append(loss)
 
         if self.progress:
             self.progress.update(
@@ -107,19 +124,27 @@ class TrainingMonitor:
             self._log_file.write(f"{iteration},{avg_reward},{loss}\n")
             self._log_file.flush()
 
-        if 'live' in self.modes: self._update_plot()
+        if 'live' in self.modes:
+            self._update_plot()
 
     def _update_plot(self):
+        # 使用 deque 內的資料進行 live 繪製
         x_data = list(self.episode_counts)[-len(self.avg_rewards_history):]
         y_reward = np.array(self.avg_rewards_history)
         y_loss = list(self.loss_history)
         if len(y_reward) == 0: return
 
-        # 1. Calculate Trend and 80% Envelope (1.28 std)
+        # 1: Centered Window SMA (處理邊界效應)
         window = 20
+        half_w = window // 2
         smoothed, std_up, std_lo = [], [], []
+        
         for i in range(len(y_reward)):
-            view = y_reward[max(0, i - window + 1) : i + 1]
+            # 取對稱窗口 [i - half_w, i + half_w]
+            start = max(0, i - half_w)
+            end = min(len(y_reward), i + half_w + 1)
+            view = y_reward[start:end]
+            
             mu, std = np.mean(view), np.std(view)
             smoothed.append(mu)
             std_up.append(mu + 1.28 * std)
@@ -148,9 +173,39 @@ class TrainingMonitor:
             self.progress.stop()
             self.console.print(f"[bold green]Training on {self.env_name} completed![/bold green]")
 
+        if 'file' in self.modes:
+            self._save_final_plot()
+
         if 'live' in self.modes:
             plt.ioff()
-            plt.show()
 
         if 'file' in self.modes and hasattr(self, '_log_file'):
             self._log_file.close()
+
+    def _save_final_plot(self):
+        """Generates and saves a high-res summary plot of the entire training."""
+        plt.ioff()
+        fig, ax1 = plt.subplots(figsize=(12, 7))
+        ax2 = ax1.twinx()
+        
+        x = self.episode_counts
+        y_r = np.array(self.full_reward_history)
+        y_l = self.full_loss_history
+
+        window = max(20, len(x) // 50)
+        half_w = window // 2
+        smoothed = [np.mean(y_r[max(0, i-half_w):min(len(y_r), i+half_w+1)]) for i in range(len(y_r))]
+
+        ax1.plot(x, y_r, color='tab:purple', alpha=0.2, label='Raw Reward')
+        ax1.plot(x, smoothed, color='tab:blue', linewidth=2, label='Trend (SMA)')
+        ax2.plot(x, y_l, color='tab:orange', linestyle='--', alpha=0.5, label='Loss')
+
+        ax1.set_xlabel('Iteration')
+        ax1.set_ylabel('Reward', color='tab:blue')
+        ax2.set_ylabel('Loss', color='tab:orange')
+        
+        plt.title(f'Final Training Summary: {self.env_name}')
+        save_path = self.log_file_path.replace('.csv', '.png')
+        plt.savefig(save_path, bbox_inches='tight', dpi=300)
+        self.console.print(f"[*] Full history plot saved to {save_path}")
+        plt.close(fig)
