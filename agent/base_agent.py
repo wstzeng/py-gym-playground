@@ -2,6 +2,7 @@
 from abc import ABC, abstractmethod
 import torch
 import torch.nn as nn
+import os
 
 class BaseAgent(ABC):
     def __init__(self, encoder: nn.Module, device: str = "auto"):
@@ -14,6 +15,12 @@ class BaseAgent(ABC):
             self.device = torch.device(device)
         
         self.encoder.to(self.device)
+        self.component_map = {
+            'policy': 'policy',
+            'critic': 'critic',
+            'optimizer': 'optimizer'
+        }
+
 
     @abstractmethod
     def select_action(self, state):
@@ -50,11 +57,21 @@ class BaseAgent(ABC):
         torch.save(checkpoint, path)
         print(f"[*] Checkpoint saved to {path}")
 
-    def load_checkpoints(self, path: str):
-        """Generic load method."""
+def load_checkpoints(self, path: str):
+        """
+        Generic load method that restores state for all present components.
+        """
+        if not os.path.exists(path):
+            print(f"[!] Checkpoint not found at {path}")
+            return
+
         checkpoint = torch.load(path, map_location=self.device)
-        self.encoder.load_state_dict(checkpoint['encoder'])
         
-        if hasattr(self, 'policy') and 'policy' in checkpoint:
-            self.policy.load_state_dict(checkpoint['policy'])
+        if 'encoder' in checkpoint:
+            self.encoder.load_state_dict(checkpoint['encoder'])
+        
+        for key, attr in self.component_map.items():
+            if hasattr(self, attr) and key in checkpoint:
+                getattr(self, attr).load_state_dict(checkpoint[key])
+        
         print(f"[*] Checkpoint loaded from {path}")
