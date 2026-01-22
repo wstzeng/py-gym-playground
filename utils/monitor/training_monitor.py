@@ -1,21 +1,19 @@
 import matplotlib.pyplot as plt
+from matplotlib.ticker import MaxNLocator
 from collections import deque
-import logging
 from typing import Union, List
 import os
+import numpy as np
 from .plot_config import set_plot_style
+
+# Import rich components
+from rich.console import Console
+from rich.progress import Progress, BarColumn, TextColumn, TimeElapsedColumn, TimeRemainingColumn
 
 class TrainingMonitor:
     """
-    Handles live plotting, CLI logging, and optionally saving logs to file
-    during training of RL agents.
-
-    Modes:
-      - 'cli': print logs to console (default)
-      - 'live': show live updating plot
-      - 'file': save logs to `log/` directory
-
-    Modes can be combined by passing a list, e.g., ['cli', 'live', 'file'].
+    Handles live plotting with XKCD support, CLI logging, and file logging.
+    Optimized for Reward-on-top visibility and trend envelopes.
     """
     def __init__(
         self,
@@ -34,119 +32,125 @@ class TrainingMonitor:
         self.loss_history = deque(maxlen=window_size)
         self.env_name = env_name
 
-        # Setup logger
-        self.logger = logging.getLogger(__name__)
-        if not self.logger.handlers:
-            logging.basicConfig(
-                level=logging.INFO,
-                format='%(asctime)s - %(levelname)s - %(message)s',
+        # --- Rich CLI Setup ---
+        self.console = Console()
+        self.progress = None
+        if 'cli' in self.modes:
+            self.progress = Progress(
+                TextColumn("[bold blue]{task.fields[env]:>16.16}", justify="left"),
+                BarColumn(bar_width=20), 
+                "[progress.percentage]{task.percentage:>3.0f}%",
+                "•",
+                TextColumn("[bold green]Avg R: {task.fields[avg_r]:>8.2f}"),
+                "•",
+                TextColumn("[bold magenta]Loss: {task.fields[loss]:>10.4f}"),
+                "•",
+                TimeElapsedColumn(),
+                "/",
+                TimeRemainingColumn(),
+                console=self.console
+            )
+            self.progress.start()
+            self.task = self.progress.add_task(
+                "Training", 
+                total=total_iterations, 
+                env=env_name, 
+                avg_r=0.0, 
+                loss=0.0
             )
 
-        # Prepare log file if 'file' mode
-        self.log_dir = log_dir
-        self.log_file_path = None
+        # --- File Logging Setup ---
         if 'file' in self.modes:
-            os.makedirs(self.log_dir, exist_ok=True)
-            self.log_file_path = os.path.join(self.log_dir, f'{env_name}_training.csv')
+            os.makedirs(log_dir, exist_ok=True)
+            self.log_file_path = os.path.join(log_dir, f'{env_name}_training.csv')
             self._log_file = open(self.log_file_path, 'w')
-            header = "Iteration,AverageReward,Loss\n"
-            self._log_file.write(header)
+            self._log_file.write("Iteration,AverageReward,Loss\n")
             self._log_file.flush()
 
-        # Prepare live plot if 'live' mode
+        # --- Live Plot Setup ---
         if 'live' in self.modes:
             styles = set_plot_style()
             plt.ion()
-            self.fig, self.ax1 = plt.subplots(1, 1)
-            self.fig.suptitle(
-                f'{agent_name} Training on {env_name}', **styles['suptitle']
-            )
-
+            self.fig, self.ax1 = plt.subplots(figsize=(10, 6))
+            self.fig.subplots_adjust(top=0.88)
             self.ax2 = self.ax1.twinx()
+            
+            # Layering: Reward (ax1) on top of Loss (ax2)
+            self.ax1.set_zorder(self.ax2.get_zorder() + 1)
+            self.ax1.patch.set_visible(False)
 
-            colors = styles.get('colors', {})
-            reward_color = colors.get('reward_line', 'tab:blue')
-            loss_color = colors.get('loss_line', 'tab:orange')
+            # 1. Raw Reward Line (Bold, Light Purple)
+            self.line_raw, = self.ax1.plot([], [], color='tab:purple', alpha=0.3, linewidth=2, label='Raw Reward', zorder=5)
+            # 2. Trend Line (Bold, Darker Blue)
+            self.line_trend, = self.ax1.plot([], [], color='tab:blue', linewidth=2.5, label='Trend (SMA)', zorder=7)
+            # 3. Loss Line (Dashed Orange)
+            self.line_loss, = self.ax2.plot([], [], color='tab:orange', linestyle='--', alpha=0.6, label='Loss', zorder=3)
+            
+            self.fill_area = None
+            self.fig.suptitle(f'{agent_name}: {env_name}', **styles['suptitle'])
 
-            self.line1, = self.ax1.plot(
-                [], [], label=f'Average Reward (last {self.window_size})',
-                color=reward_color
-            )
-            self.line2, = self.ax2.plot(
-                [], [], label=f'Policy Loss (last {self.window_size})',
-                color=loss_color, linestyle='--')
-
-            self.ax1.set_xlabel('Training Iteration')
-            self.ax1.set_ylabel('Average Reward', color=reward_color)
-            self.ax2.set_ylabel('Policy Loss', color=loss_color)
-
-            self.ax1.tick_params(axis='y', labelcolor=reward_color)
-            self.ax2.tick_params(axis='y', labelcolor=loss_color)
-
-            lines = [self.line1, self.line2]
+            # Legend Layout
+            lines = [self.line_trend, self.line_raw, self.line_loss]
             labels = [l.get_label() for l in lines]
-            self.ax1.legend(
-                lines, labels,
-                loc='lower center',
-                bbox_to_anchor=(0.5, 1.02),
-                borderaxespad=0.,
-                frameon=False
-            )
-
-            self.fig.tight_layout(rect=[0, 0, 1, 0.98])
+            self.ax1.legend(lines, labels, loc='lower right', ncol=3, fontsize='small', frameon=True)
 
     def update(self, iteration: int, avg_reward: float, loss: float):
         self.episode_counts.append(iteration)
         self.avg_rewards_history.append(avg_reward)
         self.loss_history.append(loss)
 
-        log_msg = (
-            f"[{iteration:3d}/{self.total_iterations}] "
-            + f"Avg Reward: {avg_reward:8.2f}, Loss: {loss:12.4f}"
-        )
-
-        if 'cli' in self.modes:
-            self.logger.info(log_msg)
+        if self.progress:
+            self.progress.update(
+                self.task, completed=iteration, avg_r=avg_reward, loss=loss)
 
         if 'file' in self.modes and self._log_file:
             self._log_file.write(f"{iteration},{avg_reward},{loss}\n")
             self._log_file.flush()
 
-        if 'live' in self.modes:
-            self.line1.set_xdata(self.episode_counts[-len(self.avg_rewards_history):])
-            self.line1.set_ydata(list(self.avg_rewards_history))
+        if 'live' in self.modes: self._update_plot()
 
-            self.line2.set_xdata(self.episode_counts[-len(self.loss_history):])
-            self.line2.set_ydata(list(self.loss_history))
+    def _update_plot(self):
+        x_data = list(self.episode_counts)[-len(self.avg_rewards_history):]
+        y_reward = np.array(self.avg_rewards_history)
+        y_loss = list(self.loss_history)
+        if len(y_reward) == 0: return
 
-            self.ax1.set_xlim(
-                max(0, iteration - len(self.avg_rewards_history)),
-                iteration + 1
+        # 1. Calculate Trend and 80% Envelope (1.28 std)
+        window = 20
+        smoothed, std_up, std_lo = [], [], []
+        for i in range(len(y_reward)):
+            view = y_reward[max(0, i - window + 1) : i + 1]
+            mu, std = np.mean(view), np.std(view)
+            smoothed.append(mu)
+            std_up.append(mu + 1.28 * std)
+            std_lo.append(mu - 1.28 * std)
+
+        # 2. Update Lines
+        self.line_raw.set_data(x_data, y_reward)
+        self.line_trend.set_data(x_data, smoothed)
+        self.line_loss.set_data(x_data, y_loss)
+
+        # 3. Update Shaded Area
+        if len(y_reward) > 1:
+            if self.fill_area: self.fill_area.remove()
+            self.fill_area = self.ax1.fill_between(
+                x_data, std_lo, std_up, color='tab:blue', alpha=0.12, zorder=4, linewidth=0
             )
-            self.ax2.set_xlim(
-                max(0, iteration - len(self.loss_history)),
-                iteration + 1
-            )
 
-            if self.avg_rewards_history:
-                min_r, max_r = min(self.avg_rewards_history), max(self.avg_rewards_history)
-                self.ax1.set_ylim(min_r - 0.1 * abs(min_r),
-                                  max_r + 0.1 * abs(max_r))
-
-            if self.loss_history:
-                min_l, max_l = min(self.loss_history), max(self.loss_history)
-                self.ax2.set_ylim(min_l - 0.1 * abs(min_l),
-                                  max_l + 0.1 * abs(max_l))
-
-            self.fig.canvas.draw()
-            self.fig.canvas.flush_events()
+        # 4. Refresh
+        self.ax1.relim(); self.ax1.autoscale_view()
+        self.ax2.relim(); self.ax2.autoscale_view()
+        self.fig.canvas.draw_idle()
+        self.fig.canvas.flush_events()
 
     def close(self):
+        if self.progress:
+            self.progress.stop()
+            self.console.print(f"[bold green]Training on {self.env_name} completed![/bold green]")
+
         if 'live' in self.modes:
             plt.ioff()
-            plt.close()
+            plt.show()
 
-        if 'file' in self.modes and self._log_file:
+        if 'file' in self.modes and hasattr(self, '_log_file'):
             self._log_file.close()
-            self._log_file = None
-            self.logger.info(f"Training log saved to: {self.log_file_path}")

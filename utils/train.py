@@ -1,5 +1,7 @@
+# utils/train.py
 import gymnasium as gym
-from agents import BaseAgent
+import torch
+from agent import BaseAgent
 from .monitor.training_monitor import TrainingMonitor as Monitor
 
 def train_loop(
@@ -20,22 +22,23 @@ def train_loop(
 
         for _ in range(N):
             state, _ = env.reset()
-            agent.start_episode()
             done = False
             total_reward = 0
 
             while not done:
-                action = agent.select_action(state)
+                action, info = agent.select_action(state)
                 next_state, reward, terminated, truncated, _ = env.step(action)
-                agent.record_reward(reward)
-                state = next_state
                 done = terminated or truncated
+                
+                agent.record(info, reward, done)
+                
+                state = next_state
                 total_reward += reward
 
-            agent.end_episode()
             total_rewards.append(total_reward)
 
-        loss = agent.update_policy()
+        loss = agent.update()
+        
         avg_reward = sum(total_rewards) / N
         monitor.update(t, avg_reward, loss)
 
