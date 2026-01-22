@@ -24,8 +24,8 @@ The framework follows a strict modular design where each component has a single 
 
 - [x] Base Infrastructure (OOP Core & Logging)
 - [x] REINFORCE Implementation
-- [ ] Actor-Critic (Advantage-based learning)
-- [ ] PPO (Proximal Policy Optimization)
+- [x] Actor-Critic (Advantage-based learning)
+- [x] PPO (Proximal Policy Optimization)
 
 ## Setup
 
