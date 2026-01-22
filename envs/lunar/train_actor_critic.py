@@ -1,7 +1,7 @@
 import gymnasium as gym
 from torch import nn
 import torch.optim as optim
-from agent.encoder import VectorEncoder, CompositeEncoder
+from agent.encoder import VectorEncoder
 from agent.policy import ActorCriticPolicy
 from agent.buffer import ActorCriticBuffer
 from agent import ActorCriticAgent
@@ -25,14 +25,21 @@ def main(env_name='LunarLander-v3', T=200, N=10):
     encoder = VectorEncoder(network=v_net, input_dim=state_dim)
 
     actor_head = nn.Linear(encoder.feature_dim, n_actions)
-    critic_head = nn.Linear(encoder.feature_dim, 1)
+    critic_head = nn.Sequential(
+        nn.Linear(encoder.feature_dim, 64),
+        nn.LeakyReLU(),
+        nn.Linear(64, 32),
+        nn.LeakyReLU(),
+        nn.Linear(32, 1)
+    )
     
     policy = ActorCriticPolicy(actor_net=actor_head, critic_net=critic_head)
 
-    optimizer = optim.Adam(
-        list(encoder.parameters()) + list(policy.parameters()),
-        lr=1e-3
-    )
+    optimizer = optim.AdamW([
+        {'params': encoder.parameters(), 'lr': 1e-3},
+        {'params': policy.actor.parameters(), 'lr': 1e-3},
+        {'params': policy.critic.parameters(), 'lr': 1e-4},
+    ], weight_decay=1e-2)
 
     buffer = ActorCriticBuffer()
 
@@ -53,4 +60,4 @@ def main(env_name='LunarLander-v3', T=200, N=10):
     agent.save_checkpoints(f'checkpoints/{env_name}.ckpt')
 
 if __name__ == '__main__':
-    main(T=500)
+    main(T=1000)

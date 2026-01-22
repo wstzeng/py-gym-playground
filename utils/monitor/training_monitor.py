@@ -105,7 +105,6 @@ class TrainingMonitor:
             # Legend Layout
             lines = [self.line_trend, self.line_raw, self.line_loss]
             labels = [l.get_label() for l in lines]
-            self.ax1.legend(lines, labels, loc='lower right', ncol=3, fontsize='small', frameon=True)
 
     def update(self, iteration: int, avg_reward: float, loss: float):
         self.episode_counts.append(iteration)
@@ -203,6 +202,10 @@ class TrainingMonitor:
         ax1.set_xlabel('Iteration')
         ax1.set_ylabel('Reward', color='tab:blue')
         ax2.set_ylabel('Loss', color='tab:orange')
+        ax1.tick_params(
+            axis='y', color='tab:blue', labelcolor='tab:blue')
+        ax2.tick_params(
+            axis='y', color='tab:orange', labelcolor='tab:orange')
         
         plt.title(f'Final Training Summary: {self.env_name}')
         save_path = self.log_file_path.replace('.csv', '.png')
